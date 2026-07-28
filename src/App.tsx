@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Exam, AppData } from "./types";
 import { loadData, subscribe, setExamStatus } from "./store";
+import { syncNotifications } from "./notifications";
 import { Navigation, type TabType } from "./components/Navigation";
 import { AlarmHost } from "./components/AlarmHost";
 import { DashboardScreen } from "./screens/DashboardScreen";
@@ -13,10 +14,31 @@ export function App() {
   const [data, setData] = useState<AppData>(loadData());
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [activeAlarmExam, setActiveAlarmExam] = useState<Exam | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    return subscribe(() => setData(loadData()));
+    return subscribe(() => {
+      const freshData = loadData();
+      setData(freshData);
+      syncNotifications(freshData); // sync on every store update
+    });
   }, []);
+
+  // Sync notif on boot too
+  useEffect(() => {
+    syncNotifications(data);
+  }, []);
+
+  // Audio lifecycle
+  useEffect(() => {
+    if (activeAlarmExam && data.settings.suaraAlarm && audioRef.current) {
+      audioRef.current.loop = true;
+      audioRef.current.play().catch(e => console.warn("Audio autoplay blocked", e));
+    } else if (!activeAlarmExam && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [activeAlarmExam, data.settings.suaraAlarm]);
 
   // Check alarm trigger loop
   useEffect(() => {
@@ -65,6 +87,11 @@ export function App() {
       </main>
 
       <AlarmHost activeAlarmExam={activeAlarmExam} onDismiss={handleDismissAlarm} />
+      {/* 
+        ponytail: using a remote mp3 file for alarm sound so we don't need to add asset bundler logic for Android 
+        Update: add raw local file if offline strict is needed 
+      */}
+      <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto" />
     </div>
   );
 }
