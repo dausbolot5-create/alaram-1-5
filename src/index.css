@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #131726;
+    color: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+.glow-primary {
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.35), 0 12px 32px -12px rgba(234, 179, 8, 0.45);
+}

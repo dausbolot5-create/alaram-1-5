@@ -1,0 +1,8 @@
+{
+  "name": "ExamPing AI",
+  "description": "Alarm Ujian Sekali Bunyi dari Screenshot",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
