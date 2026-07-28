@@ -31,6 +31,9 @@ jobs:
     - name: Setup Gradle Wrapper
       run: gradle wrapper --gradle-version 8.9
 
+    - name: Enable AndroidX
+      run: echo "android.useAndroidX=true" >> gradle.properties
+
     - name: Build with Gradle
       run: ./gradlew assembleDebug
 
