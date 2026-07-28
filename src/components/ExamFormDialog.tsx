@@ -124,20 +124,28 @@ export const ExamFormDialog: React.FC<ExamFormDialogProps> = ({
             <div>
               <label className="block text-slate-300 font-medium mb-1">Jam Mulai (HH:mm) *</label>
               <input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="\d{2}:\d{2}"
+                maxLength={5}
                 value={draft.jam_mulai}
                 onChange={(e) => setDraft({ ...draft, jam_mulai: e.target.value })}
                 className="w-full rounded-xl bg-[#1e2436] border border-[#333a52] px-3 py-2 text-white outline-none focus:border-amber-500"
+                placeholder="08:00"
               />
               {errors.jam_mulai && <p className="text-red-400 mt-1">{errors.jam_mulai}</p>}
             </div>
             <div>
               <label className="block text-slate-300 font-medium mb-1">Jam Selesai (HH:mm) *</label>
               <input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="\d{2}:\d{2}"
+                maxLength={5}
                 value={draft.jam_selesai}
                 onChange={(e) => setDraft({ ...draft, jam_selesai: e.target.value })}
                 className="w-full rounded-xl bg-[#1e2436] border border-[#333a52] px-3 py-2 text-white outline-none focus:border-amber-500"
+                placeholder="10:00"
               />
               {errors.jam_selesai && <p className="text-red-400 mt-1">{errors.jam_selesai}</p>}
             </div>

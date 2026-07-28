@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, Trash2, Share2, Bell } from "lucide-react";
+import { Download, Trash2, Share2, Bell, Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import type { AppSettings, Exam } from "../types";
 import { clearAll, saveSettings } from "../store";
 import { buildIcs, downloadFile } from "../ics";
@@ -11,6 +11,38 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, exams }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const [testMessage, setTestMessage] = useState("");
+
+  const handleTestConnection = async () => {
+    const key = settings.apiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || "";
+    if (!key) {
+      setTestStatus("error");
+      setTestMessage("API Key kosong.");
+      return;
+    }
+    
+    setTestStatus("testing");
+    // Use list models endpoint — doesn't consume generateContent quota
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+    
+    try {
+      const res = await fetch(endpoint);
+      
+      if (!res.ok) {
+        if (res.status === 400) throw new Error("API Key tidak valid atau format salah.");
+        if (res.status === 403) throw new Error("API Key tidak memiliki izin. Periksa di Google AI Studio.");
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const count = data.models?.length || 0;
+      setTestStatus("success");
+      setTestMessage(`Koneksi berhasil! ${count} model tersedia.`);
+    } catch (err: any) {
+      setTestStatus("error");
+      setTestMessage(err.message || "Gagal menghubungi server.");
+    }
+  };
 
   return (
     <div className="space-y-4 pb-20 text-xs">
@@ -58,6 +90,44 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, exams 
             />
           </div>
         </div>
+      </div>
+
+      {/* AI Settings Section */}
+      <div className="rounded-2xl border border-[#333a52] bg-[#252b3e] p-4 space-y-4">
+        <h3 className="font-bold text-white text-sm flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-amber-400" /> AI Vision (Gemini)
+        </h3>
+        
+        <div>
+          <label className="block text-slate-300 font-medium mb-1">API Key (Gemini)</label>
+          <input
+            type="password"
+            value={settings.apiKey || ""}
+            onChange={(e) => saveSettings({ apiKey: e.target.value })}
+            className="w-full rounded-xl bg-[#1e2436] border border-[#333a52] px-3 py-2 text-white outline-none focus:border-amber-500"
+            placeholder="AIzaSy..."
+          />
+          <p className="text-[10px] text-slate-500 mt-1">Kosongkan jika menggunakan key bawaan aplikasi.</p>
+        </div>
+
+        <button
+          onClick={handleTestConnection}
+          disabled={testStatus === "testing"}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#333a52] bg-[#1e2436] py-2.5 font-bold text-slate-200 hover:bg-slate-700 transition disabled:opacity-50"
+        >
+          {testStatus === "testing" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Test Koneksi AI"}
+        </button>
+
+        {testStatus !== "idle" && (
+          <div className={`flex items-start gap-2 p-3 rounded-xl border text-[11px] ${
+            testStatus === "success" 
+              ? "bg-green-500/10 border-green-500/30 text-green-400" 
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}>
+            {testStatus === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" /> : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+            <span className="break-all">{testMessage}</span>
+          </div>
+        )}
       </div>
 
       {/* Data & Backup Section */}

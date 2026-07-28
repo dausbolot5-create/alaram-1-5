@@ -39,12 +39,14 @@ export interface AppSettings {
   offsetMulai: number;
   offsetSelesai: number;
   suaraAlarm: boolean;
+  apiKey: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   offsetMulai: 30,
   offsetSelesai: 30,
   suaraAlarm: true,
+  apiKey: "",
 };
 
 export const JENIS_UJIAN = ["UTS", "UAS", "Kuis", "Praktikum", "Responsi", "Lainnya"];

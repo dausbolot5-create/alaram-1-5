@@ -3,6 +3,7 @@ import { ImagePlus, Loader2, Edit3, AlertCircle, Plus, Trash2 } from "lucide-rea
 import type { ExamDraft } from "../types";
 import { addExams, bumpAiQuota, getAiQuota } from "../store";
 import { parseScheduleFromImage } from "../ai";
+import { ExamFormDialog } from "../components/ExamFormDialog";
 
 interface UploadScreenProps {
   onNavigateHome: () => void;
@@ -13,6 +14,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({ onNavigateHome }) =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<ExamDraft[] | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const quota = getAiQuota();
 
@@ -116,7 +118,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({ onNavigateHome }) =>
           {error && <p className="text-xs font-medium text-red-400">{error}</p>}
 
           <button
-            onClick={() => setDrafts([emptyDraft()])}
+            onClick={() => setShowManualForm(true)}
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#333a52] bg-[#252b3e] py-3 text-xs font-bold text-slate-200 hover:bg-slate-700 transition"
           >
             <Edit3 className="h-4 w-4" /> Isi manual tanpa screenshot
@@ -207,7 +209,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({ onNavigateHome }) =>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Mulai *</label>
                   <input
-                    type="time"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{2}:\d{2}"
+                    maxLength={5}
+                    placeholder="08:00"
                     value={draft.jam_mulai}
                     onChange={(e) =>
                       setDrafts(drafts.map((d, i) => (i === idx ? { ...d, jam_mulai: e.target.value } : d)))
@@ -218,7 +224,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({ onNavigateHome }) =>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Selesai *</label>
                   <input
-                    type="time"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{2}:\d{2}"
+                    maxLength={5}
+                    placeholder="10:00"
                     value={draft.jam_selesai}
                     onChange={(e) =>
                       setDrafts(drafts.map((d, i) => (i === idx ? { ...d, jam_selesai: e.target.value } : d)))
@@ -256,6 +266,18 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({ onNavigateHome }) =>
           </div>
         </div>
       )}
+      
+      <ExamFormDialog
+        show={showManualForm}
+        onDismiss={() => setShowManualForm(false)}
+        onSubmit={(draft) => {
+          addExams([{
+            ...draft,
+            source: "manual",
+          }]);
+          onNavigateHome();
+        }}
+      />
     </div>
   );
 };
