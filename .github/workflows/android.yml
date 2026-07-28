@@ -12,33 +12,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: set up JDK 17
+    - name: Capacitor build and sync
+      run: |
+        npm install
+        npm run build
+        npx cap sync android
+
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
-
-    - name: Create secrets files
+    - name: Build APK with Gradle (Capacitor)
       run: |
-        touch local.defaults.properties
-        touch secrets.properties
-
-    # Kalau gradlew gak ada, kita generate
-    - name: Setup Gradle Wrapper
-      run: gradle wrapper --gradle-version 8.9
-
-    - name: Enable AndroidX
-      run: echo "android.useAndroidX=true" >> gradle.properties
-
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+        cd android
+        chmod +x gradlew || true
+        ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: examping-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
