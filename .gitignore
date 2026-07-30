@@ -33,3 +33,4 @@ dist-ssr
 
 .gradle/
 build/
+memory_log.md

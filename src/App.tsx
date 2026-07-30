@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import type { Exam, AppData } from "./types";
 import { loadData, subscribe, setExamStatus } from "./store";
 import { syncNotifications } from "./notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { Navigation, type TabType } from "./components/Navigation";
 import { AlarmHost } from "./components/AlarmHost";
 import { DashboardScreen } from "./screens/DashboardScreen";
@@ -9,6 +10,8 @@ import { CalendarScreen } from "./screens/CalendarScreen";
 import { UploadScreen } from "./screens/UploadScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+
+import { App as CapApp } from '@capacitor/app';
 
 export function App() {
   const [data, setData] = useState<AppData>(loadData());
@@ -24,9 +27,22 @@ export function App() {
     });
   }, []);
 
-  // Sync notif on boot too
+  // Handle capacitor notification tap action to bring app to foreground
+  useEffect(() => {
+    LocalNotifications.addListener("localNotificationActionPerformed", (notification) => {
+      // Find the associated exam id from the generated numerical id/title mapping if needed
+      // Actually we just rely on the setInterval to trigger the AlarmHost overlay 
+      // but listening to this ensures the app is launched and we don't miss the check
+      syncNotifications(loadData());
+    });
+  }, []);
   useEffect(() => {
     syncNotifications(data);
+    CapApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        syncNotifications(loadData());
+      }
+    });
   }, []);
 
   // Audio lifecycle

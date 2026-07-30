@@ -46,9 +46,19 @@ export async function syncNotifications(data: AppData) {
           body,
           schedule: { at: new Date(t.waktu), allowWhileIdle: true },
           smallIcon: "ic_stat_icon_config_sample", // default fallback
+          channelId: "alarm_channel",
         };
       })
       .filter(Boolean) as ScheduleOptions["notifications"];
+
+    // Ensure channel exists
+    await LocalNotifications.createChannel({
+      id: "alarm_channel",
+      name: "Alarm Channel",
+      importance: 5,
+      visibility: 1,
+      vibration: true
+    });
 
     if (toSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: toSchedule });

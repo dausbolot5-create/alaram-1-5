@@ -62,11 +62,16 @@ export function toEpoch(tanggal: string, jam: string): number {
 export function buildTriggers(exam: Exam, settings: AppSettings): Trigger[] {
   const mulai = toEpoch(exam.tanggal, exam.jam_mulai);
   const selesai = toEpoch(exam.tanggal, exam.jam_selesai);
-  const defs: Array<{ tipe: TriggerType; waktu: number }> = [
-    { tipe: "reminder_mulai", waktu: mulai - settings.offsetMulai * 60_000 },
-    { tipe: "alarm_mulai", waktu: mulai },
-    { tipe: "reminder_selesai", waktu: selesai - settings.offsetSelesai * 60_000 },
-  ];
+  const defs: Array<{ tipe: TriggerType; waktu: number }> = [];
+  
+  if (settings.notifMulai) {
+    defs.push({ tipe: "reminder_mulai", waktu: mulai - settings.offsetMulai * 60_000 });
+  }
+  defs.push({ tipe: "alarm_mulai", waktu: mulai });
+  if (settings.notifSelesai) {
+    defs.push({ tipe: "reminder_selesai", waktu: selesai - settings.offsetSelesai * 60_000 });
+  }
+
   return defs.map((d) => ({
     id: newId(),
     exam_id: exam.id,
