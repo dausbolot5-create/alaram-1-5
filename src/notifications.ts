@@ -1,4 +1,5 @@
 import { LocalNotifications, ScheduleOptions } from "@capacitor/local-notifications";
+import { Alarm } from "@capawesome/capacitor-alarm";
 import { AppData } from "./store";
 import { toEpoch } from "./store";
 
@@ -46,6 +47,7 @@ export async function syncNotifications(data: AppData) {
           body,
           schedule: { at: new Date(t.waktu), allowWhileIdle: true },
           smallIcon: "ic_stat_icon_config_sample", // default fallback
+          sound: "beep", // default sound instead of silent
           channelId: "alarm_channel",
         };
       })
@@ -63,6 +65,34 @@ export async function syncNotifications(data: AppData) {
     if (toSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: toSchedule });
     }
+    // Schedule native alarms
+    try {
+      const perms = await Alarm.checkPermissions();
+      if (perms.alarm !== 'granted') {
+        await Alarm.requestPermissions();
+      }
+      
+      // we only care about alarm_mulai for full system alarms
+      const alarmTriggers = data.triggers.filter((t) => !t.sudah_bunyi && t.waktu > now && t.tipe === "alarm_mulai");
+      
+      for (const t of alarmTriggers) {
+         const exam = data.exams.find((e) => e.id === t.exam_id);
+         if (!exam) continue;
+         
+         const alarmTime = new Date(t.waktu);
+         
+         await Alarm.setAlarm({
+           hour: alarmTime.getHours(),
+           minute: alarmTime.getMinutes(),
+           message: exam.nama_mk,
+           skipUi: true,
+           days: [] // One-time alarm
+         });
+      }
+    } catch (e) {
+      console.warn("Failed to set system alarms", e);
+    }
+    
   } catch (e) {
     console.error("Failed to sync notifications", e);
   }
