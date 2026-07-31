@@ -3,6 +3,7 @@ import type { Exam, AppData } from "./types";
 import { loadData, subscribe, setExamStatus } from "./store";
 import { syncNotifications } from "./notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { ExactAlarm } from "./exactAlarm";
 import { Navigation, type TabType } from "./components/Navigation";
 import { AlarmHost } from "./components/AlarmHost";
 import { DashboardScreen } from "./screens/DashboardScreen";
@@ -65,6 +66,7 @@ export function App() {
           const exam = data.exams.find((e) => e.id === t.exam_id);
           if (exam) {
             setActiveAlarmExam(exam);
+            ExactAlarm.stopAlarm().catch(() => {}); // native FGS sound now handled by in-app overlay
             break;
           }
         }
@@ -78,6 +80,7 @@ export function App() {
     if (activeAlarmExam) {
       setExamStatus(activeAlarmExam.id, "ongoing");
       setActiveAlarmExam(null);
+      ExactAlarm.stopAlarm().catch(() => {});
     }
   };
 

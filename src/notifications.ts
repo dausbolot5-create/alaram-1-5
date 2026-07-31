@@ -1,7 +1,6 @@
 import { LocalNotifications, ScheduleOptions } from "@capacitor/local-notifications";
-import { Alarm } from "@capawesome/capacitor-alarm";
+import { ExactAlarm } from "./exactAlarm";
 import { AppData } from "./store";
-import { toEpoch } from "./store";
 
 export async function syncNotifications(data: AppData) {
   try {
@@ -19,7 +18,7 @@ export async function syncNotifications(data: AppData) {
 
     const now = Date.now();
     const toSchedule = data.triggers
-      .filter((t) => !t.sudah_bunyi && t.waktu > now)
+      .filter((t) => !t.sudah_bunyi && t.waktu > now && t.tipe !== "alarm_mulai")
       .map((t) => {
         const exam = data.exams.find((e) => e.id === t.exam_id);
         if (!exam) return null;
@@ -33,9 +32,6 @@ export async function syncNotifications(data: AppData) {
         } else if (t.tipe === "reminder_selesai") {
           title = "Waktu Hampir Habis";
           body = `${exam.nama_mk} selesai dalam ${data.settings.offsetSelesai} menit.`;
-        } else if (t.tipe === "alarm_mulai") {
-          title = "Ujian Dimulai!";
-          body = `${exam.nama_mk} mulai sekarang.`;
         }
 
         // generate numerical ID for capacitor
@@ -65,34 +61,30 @@ export async function syncNotifications(data: AppData) {
     if (toSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: toSchedule });
     }
-    // Schedule native alarms
+    // Schedule native exact alarms (AlarmManager.setAlarmClock + foreground service)
+    // so they still fire when the app is killed / swiped from recent apps.
     try {
-      const perms = await Alarm.checkPermissions();
-      if (perms.alarm !== 'granted') {
-        await Alarm.requestPermissions();
-      }
-      
-      // we only care about alarm_mulai for full system alarms
-      const alarmTriggers = data.triggers.filter((t) => !t.sudah_bunyi && t.waktu > now && t.tipe === "alarm_mulai");
-      
+      const nowMs = Date.now();
+      const alarmTriggers = data.triggers.filter((t) => !t.sudah_bunyi && t.waktu > nowMs && t.tipe === "alarm_mulai");
+
+      // Reset native alarms first so removed/cancelled triggers don't ring.
+      await ExactAlarm.cancelAll();
+
       for (const t of alarmTriggers) {
-         const exam = data.exams.find((e) => e.id === t.exam_id);
-         if (!exam) continue;
-         
-         const alarmTime = new Date(t.waktu);
-         
-         await Alarm.setAlarm({
-           hour: alarmTime.getHours(),
-           minute: alarmTime.getMinutes(),
-           message: exam.nama_mk,
-           skipUi: true,
-           days: [] // One-time alarm
-         });
+        const exam = data.exams.find((e) => e.id === t.exam_id);
+        if (!exam) continue;
+
+        await ExactAlarm.schedule({
+          id: t.id,
+          at: t.waktu,
+          title: "Alarm Ujian!",
+          body: `${exam.nama_mk} mulai sekarang.`,
+        });
       }
     } catch (e) {
-      console.warn("Failed to set system alarms", e);
+      console.warn("Failed to set exact alarms", e);
     }
-    
+
   } catch (e) {
     console.error("Failed to sync notifications", e);
   }
